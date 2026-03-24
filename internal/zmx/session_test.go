@@ -170,6 +170,39 @@ func TestFetchSessionsWithInjectedDeps(t *testing.T) {
 	}
 }
 
+func TestFetchSessionsNewFormat(t *testing.T) {
+	orig := deps
+	defer func() { deps = orig }()
+
+	deps.command = func(name string, arg ...string) *exec.Cmd {
+		script := "printf 'name=cosmic-repl\tpid=24210\tclients=1\tcreated=1774349729\tstart_dir=/home/user/dev\tcmd=bb dev\n'"
+		return exec.Command("sh", "-c", script)
+	}
+
+	got, err := FetchSessions()
+	if err != nil {
+		t.Fatalf("FetchSessions error: %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("expected 1 session, got %d: %+v", len(got), got)
+	}
+	if got[0].Name != "cosmic-repl" {
+		t.Errorf("Name = %q, want %q", got[0].Name, "cosmic-repl")
+	}
+	if got[0].PID != "24210" {
+		t.Errorf("PID = %q, want %q", got[0].PID, "24210")
+	}
+	if got[0].Clients != 1 {
+		t.Errorf("Clients = %d, want 1", got[0].Clients)
+	}
+	if got[0].StartedIn != "/home/user/dev" {
+		t.Errorf("StartedIn = %q, want %q", got[0].StartedIn, "/home/user/dev")
+	}
+	if got[0].Cmd != "bb dev" {
+		t.Errorf("Cmd = %q, want %q", got[0].Cmd, "bb dev")
+	}
+}
+
 func TestCopyToClipboardUsesInjectedDeps(t *testing.T) {
 	orig := deps
 	defer func() { deps = orig }()
